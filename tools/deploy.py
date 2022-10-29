@@ -211,6 +211,37 @@ def main():
                 range(len(ir_files)), model_params, ir_files):
             onnx_name = osp.splitext(osp.split(onnx_path)[1])[0]
             save_file = model_param.get('save_file', onnx_name + '.engine')
+            model_engine_path = model_param.get('save_file', onnx_name)
+
+            if quant:
+                from onnx2tensorrt import parse_args
+
+                from mmdeploy.apis.tensorrt import _from_onnx,load,save
+
+                deploy_cfg, model_cfg = load_config(deploy_cfg_path,
+                                                    model_cfg_path)
+                quant_onnx, quant_table, quant_engine = get_quant_model_file(
+                    onnx_path, args.work_dir)
+                
+                create_process(
+                    'ppq quant table',
+                    target=get_table,
+                    args=(onnx_path, deploy_cfg, model_cfg, quant_onnx,
+                          quant_table, quant_image_dir, args.device),
+                    kwargs=dict(),
+                    ret_value=ret_value)
+                
+                create_process(
+                    'ppq_int8',
+                    #ppq2int8
+                    target=ncnn2int8,
+                    args=(model_param_path,model_bin_path,quant_table,
+                          quant_param, quant_bin),
+                    kwargs=dict(),
+                    ret_value=ret_value)
+                backend_files += quant_engine
+            else:
+                backend_files += model_engine_path
 
             partition_type = 'end2end' if partition_cfgs is None \
                 else onnx_name
