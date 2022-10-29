@@ -214,13 +214,13 @@ def main():
             model_engine_path = model_param.get('save_file', onnx_name)
 
             if quant:
-                from onnx2tensorrt import parse_args
+                from onnx2ppq_quant_table import get_table
 
                 from mmdeploy.apis.tensorrt import _from_onnx,load,save
 
                 deploy_cfg, model_cfg = load_config(deploy_cfg_path,
                                                     model_cfg_path)
-                quant_onnx, quant_table, quant_engine = get_quant_model_file(
+                quant_onnx, quant_table, quant_engine = _from_onnx(
                     onnx_path, args.work_dir)
                 
                 create_process(

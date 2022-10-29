@@ -1,6 +1,8 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import ctypes
 import os
+import shutil
+from mmdeploy.backend.tensorrt.onnx2tensorrt import onnx2tensorrt
 
 from mmdeploy.utils import get_file_path, get_root_logger
 
@@ -37,3 +39,34 @@ def load_tensorrt_plugin() -> bool:
         logger.warning(f'Could not load the library of tensorrt plugins. \
             Because the file does not exist: {lib_path}')
     return success
+
+def get_onnx2tensorrt_path() -> str:
+    """Get mmdeploy_onnx2tensorrt path.
+
+    Returns:
+    str: A path of mmdeploy_tensorrt tool.
+    """
+    candidates = ['./mmdeploy_onnx2tensorrt', './mmdeploy_onnx2tensorrt.exe']
+    onnx2tensorrt_path = get_file_path(os.path.dirname(__file__), candidates)
+
+    if onnx2tensorrt_path is None or not os.path.exists(onnx2tensorrt_path):
+        onnx2tensorrt_path = get_file_path('', candidates)
+
+    if onnx2tensorrt_path is None or not os.path.exists(onnx2tensorrt_path):
+        onnx2tensorrt_path = shutil.which('mmdeploy_onnx2tensorrt')
+        onnx2tensorrt_path = '' if onnx2tensorrt_path is None else onnx2tensorrt_path
+
+    return onnx2tensorrt_path
+
+def get_tensorrt2int8_path() -> str:
+    """Get onnx2int8 path.
+
+    Returns:
+        str: A path of ncnn2int8 tools.
+    """
+    tensorrt2int8_path = shutil.which('tensorrt2int8')
+    if tensorrt2int8_path is None:
+        raise Exception(
+            'Cannot find tensorrt2int8, try `export PATH=/path/to/tensorrt2int8`'
+    )
+    return tensorrt2int8_path
