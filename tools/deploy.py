@@ -216,11 +216,11 @@ def main():
             if quant:
                 from onnx2ppq_quant_table import get_table
 
-                from mmdeploy.apis.tensorrt import _from_onnx,load,save
+                from mmdeploy.apis.tensorrt import get_quant_model_file
 
                 deploy_cfg, model_cfg = load_config(deploy_cfg_path,
                                                     model_cfg_path)
-                quant_onnx, quant_table, quant_engine = _from_onnx(
+                quant_onnx, quant_table, quant_engine = get_quant_model_file(
                     onnx_path, args.work_dir)
                 
                 create_process(
@@ -234,9 +234,8 @@ def main():
                 create_process(
                     'ppq_int8',
                     #ppq2int8
-                    target=ncnn2int8,
-                    args=(model_param_path,model_bin_path,quant_table,
-                          quant_param, quant_bin),
+                    target=onnx2tensorrt,
+                    args=(model_engine_path,save_file,model_id,deploy_cfg,onnx_path,'cuda:0'),
                     kwargs=dict(),
                     ret_value=ret_value)
                 backend_files += quant_engine

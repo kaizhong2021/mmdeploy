@@ -8,6 +8,7 @@ from struct import calcsize
 from cv2 import _InputArray_STD_ARRAY
 
 from mmcv import Config
+from mmdeploy.backend import tensorrt
 from mmdeploy.codebase.base import task
 
 from mmdeploy.utils import Task, get_root_logger, get_task_type, load_config
@@ -28,9 +29,9 @@ def get_table(onnx_path: str,
 
     #build calibration dataloader. If img dir not specified , use val dataset.
     if image_dir is not None:
-        from quant_image_dataset import QuantizationImageDataset
+        from mmdeploy.backend.tensorrt.calib_utils import HDF5Calibrator
         from torch.utils.data import DataLoader
-        dataset = QuantizationImageDataset(
+        dataset = HDF5Calibrator(
             path=image_dir, deploy_cfg=deploy_cfg, model_cfg=model_cfg)
         dataloader = DataLoader(dataset, batch_size =1)
     else:
