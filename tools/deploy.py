@@ -220,7 +220,7 @@ def main():
 
                 deploy_cfg, model_cfg = load_config(deploy_cfg_path,
                                                     model_cfg_path)
-                quant_onnx, quant_table, quant_engine = get_quant_model_file(
+                quant_onnx,  quant_engine = get_quant_model_file(
                     onnx_path, args.work_dir)
                 
                 create_process(

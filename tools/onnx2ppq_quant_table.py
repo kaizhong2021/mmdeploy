@@ -5,9 +5,11 @@ from msilib import type_binary
 from platform import platform
 from statistics import mode
 from struct import calcsize
+from tkinter import N
 from cv2 import _InputArray_STD_ARRAY
 
 from mmcv import Config
+from mmdeploy.apis.onnx.export import export
 from mmdeploy.backend import tensorrt
 from mmdeploy.codebase.base import task
 
@@ -73,6 +75,7 @@ def get_table(onnx_path: str,
     quant_setting.quantize_parameter = True
     quant_setting.quantize_parameter_setting.calib_algorithm = 'minmax'
 
+    #quantize the model
     quantized = quantize_onnx_model(
         onnx_import_file=onnx_path,
         calib_dataloader=dataloader,
@@ -83,6 +86,7 @@ def get_table(onnx_path: str,
         device=device,
         verbose=1)
 
+    #export quantized graph and quant table
     export_ppq_graph(
         graph=quantized,
         platform=TargetPlatform.TRT_INT8,
@@ -90,6 +94,28 @@ def get_table(onnx_path: str,
         config_save_to=out_quant_table_path)
     return
 
+
+def parse_args():
+    parse = argparse.ArgumentParser(
+        description='Generate ppq quant table from ONNX.')
+    parse.add_argument('--onnx',help='ONNX model path')
+    parse.add_argument('--deploy-cfg',help='Input deploy config path')
+    parse.add_argument('--model-cfg',help='Input model config path')
+    parse.add_argument('--out-onnx',help='Output onnx path')
+    parse.add_argument('--out-table',help='Output quant table path')
+    parse.add_argument(
+        '--image-dir',
+        type=str,
+        default=None,
+        help='Calibration Image Directory.')
+    parse.add_argument(
+        '--log-level',
+        help='set log level',
+        default='INFO',
+        choices=list(logging._nameToLevel.keys()))
+    args = parse_args()
+
+    return args
 
 def main():
     args = parse_args()
