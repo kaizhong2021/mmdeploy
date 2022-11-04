@@ -57,12 +57,12 @@ def get_onnx2tensorrt_path() -> str:
         onnx2tensorrt_path = '' if onnx2tensorrt_path is None else onnx2tensorrt_path
 
     return onnx2tensorrt_path
-'''
+
 def get_tensorrt2int8_path() -> str:
     """Get onnx2int8 path.
 
     Returns:
-        str: A path of ncnn2int8 tools.
+        str: A path of tensorrt2int8 tools.
     """
     tensorrt2int8_path = shutil.which('tensorrt2int8')
     if tensorrt2int8_path is None:
@@ -70,4 +70,3 @@ def get_tensorrt2int8_path() -> str:
             'Cannot find tensorrt2int8, try `export PATH=/path/to/tensorrt2int8`'
     )
     return tensorrt2int8_path
-'''

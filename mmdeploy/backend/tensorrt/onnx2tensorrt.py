@@ -1,4 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+import os
 import os.path as osp
 from typing import Dict, Union, List, Optional
 
@@ -88,20 +89,3 @@ def onnx2tensorrt(work_dir: str,
         max_workspace_size=final_params.get('max_workspace_size', 0),
         device_id=device_id)
 
-def get_output_model_file(onnx_path: str,
-                          work_dir: Optional[str] = None) -> List[str]:
-     """Returns the path to the .engine.
-
-    Args:
-        onnx_path (str): The path to the onnx model.
-        work_dir (str|None): The path to the directory for saving the results.
-            Defaults to `None`, which means use the directory of onnx_path.
-
-    Returns:
-        List[str]: The path to the files where the export result will be
-            located.
-    """   
-    if work_dir is None:
-        work_dir = osp.dirname(onnx_path)
-    mkdir_or_exist(osp.abspath(work_dir))
-    file_name = osp.splitext(osp.split(onnx_path)[1])
