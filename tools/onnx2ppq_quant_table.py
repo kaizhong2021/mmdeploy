@@ -1,17 +1,7 @@
 import argparse
-from ast import arg, parse
 import logging
-from msilib import type_binary
-from platform import platform
-from statistics import mode
-from struct import calcsize
-from tkinter import N
-from cv2 import _InputArray_STD_ARRAY
 
 from mmcv import Config
-from mmdeploy.apis.onnx.export import export
-from mmdeploy.backend import tensorrt
-from mmdeploy.codebase.base import task
 
 from mmdeploy.utils import Task, get_root_logger, get_task_type, load_config
 from tools.deploy import parse_args
