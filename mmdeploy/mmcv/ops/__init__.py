@@ -5,6 +5,9 @@ from . import point_sample  # noqa: F401,F403
 from . import roi_align  # noqa: F401,F403
 from . import roi_align_rotated  # noqa: F401,F403
 from . import transformer  # noqa: F401,F403
+from . import sparse_ops
+from . import sparse_modules
+from . import sparse_conv
 from .nms import ONNXNMSop, TRTBatchedNMSop, multiclass_nms
 from .nms_rotated import (ONNXNMSRotatedOp, TRTBatchedRotatedNMSop,
                           multiclass_nms_rotated)
