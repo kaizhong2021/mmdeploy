@@ -1,7 +1,107 @@
-from mmdeploy.core import SYMBOLIC_REWRITER
+from mmdeploy.core import FUNCTION_REWRITER
+from mmcv.ops.sparse_structure import SparseConvTensor
+from mmcv.ops import sparse_ops as ops
+from mmcv.ops import sparse_functional as Fsp
+import torch
+from typing import Any
 
 
-@SYMBOLIC_REWRITER.register_symbolic(
+class ONNXSparseConvop(torch.autograd.Function):
+    """Sparse Convolution.
+
+    Please refer to `SECOND <https://www.mdpi.com/1424-8220/18/10/3337>`_ for
+    more details.
+    """
+
+    @staticmethod
+    def forward(ctx: Any, features: torch.Tensor, filters: torch.nn.Parameter,
+                indice_pairs: torch.Tensor, indice_pair_num: torch.Tensor,
+                num_activate_out: torch.Tensor) -> torch.Tensor:
+        """
+        Args:
+            features (torch.Tensor): Features that needs to convolute.
+            filters (torch.nn.parameter.Parameter): Convolution filters.
+            indice_pairs (torch.Tensor): Indice pairs between inputs locations
+                and outputs locations.
+            indice_pair_num (torch.Tensor): Indice pairs num.
+            num_activate_out (torch.Tensor): Output channels num.
+
+        Returns:
+            torch.Tensor: Output features from gather-gemm-scatter.
+        """
+        ctx.save_for_backward(indice_pairs, indice_pair_num, features, filters)
+        return ops.indice_conv(features, filters, indice_pairs,
+                               indice_pair_num, num_activate_out, False)
+
+    @staticmethod
+    def backward(ctx: Any, grad_output: torch.Tensor) -> tuple:
+        indice_pairs, indice_pair_num, features, filters = ctx.saved_tensors
+        input_bp, filters_bp = ops.indice_conv_backward(
+            features, filters, grad_output, indice_pairs, indice_pair_num,
+            False)
+
+        return input_bp, filters_bp, None, None, None
+
+    @staticmethod
+    def symbolic(g, features, filters, indice_pairs, indice_pair_num, num_activate_out):
+        return g.op(
+            'mmdeploy::SparseConvFunction',
+            features,
+            filters,
+            indice_pairs,
+            indice_pair_num,
+            num_activate_out
+        )
+
+
+class ONNXSubMConvop(torch.autograd.Function):
+    """Create onnx::SubMConvFunction op."""
+
+    @staticmethod
+    def forward(ctx: Any, features: torch.Tensor, filters: torch.nn.Parameter, 
+                indice_pairs: torch.Tensor, indice_pair_num: torch.Tensor,
+                num_activate_out: torch.Tensor) -> torch.Tensor:
+
+        """
+        Args:
+            features (torch.Tensor): Features that needs to convolute.
+            filters (torch.nn.parameter.Parameter): Convolution filters.
+            indice_pairs (torch.Tensor): Indice pairs between inputs locations
+                and outputs locations.
+            indice_pair_num (torch.Tensor): Indice pairs num.
+            num_activate_out (torch.Tensor): Output channels num.
+
+        Returns:
+            torch.Tensor: Output features from gather-gemm-scatter.
+        """
+        ctx.save_for_backward(indice_pairs, indice_pair_num, features, filters)
+        return ops.indice_conv(features, filters, indice_pairs,
+                               indice_pair_num, num_activate_out, False, True)
+
+    @staticmethod
+    def backward(ctx: Any, grad_output: torch.Tensor) -> tuple:
+        indice_pairs, indice_pair_num, features, filters = ctx.saved_tensors
+        input_bp, filters_bp = ops.indice_conv_backward(
+            features, filters, grad_output, indice_pairs, indice_pair_num,
+            False, True)
+
+        return input_bp, filters_bp, None, None, None
+    
+    @staticmethod
+    def symbolic(g, features, filters, indice_pairs, indice_pair_num, num_activate_out):
+        return g.op(
+            'mmdeploy::SubMConvFunction',
+            features,
+            filters,
+            indice_pairs,
+            indice_pair_num,
+            num_activate_out
+        )
+
+indice_conv = ONNXSparseConvop.apply
+indice_subm_conv = ONNXSubMConvop.apply
+
+@FUNCTION_REWRITER.register_rewriter(
     'mmcv.ops.sparse_conv.SparseConvolution.forward',
      backend='tensorrt')
 def sparse_convolution__forward(self, input):
@@ -73,7 +173,7 @@ def sparse_convolution__forward(self, input):
                                                 self.subm)
     else:
         if self.subm:
-            out_features = Fsp.indice_subm_conv(features, self.weight,
+            out_features = indice_subm_conv(features, self.weight,
                                                 indice_pairs.to(device),
                                                 indice_pair_num,
                                                 outids.shape[0])
@@ -83,7 +183,7 @@ def sparse_convolution__forward(self, input):
                     features, self.weight, indice_pairs.to(device),
                     indice_pair_num, outids.shape[0])
             else:
-                out_features = Fsp.indice_conv(features, self.weight,
+                out_features = indice_conv(features, self.weight,
                                                 indice_pairs.to(device),
                                                 indice_pair_num,
                                                 outids.shape[0])
